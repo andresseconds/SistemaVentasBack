@@ -18,6 +18,18 @@ export class ProductsController {
     return this.productsService.findAll();
   }
 
+  // GET /products/inventory/logs (Global)
+  @Get('inventory/logs')
+  findAllLogs(){
+    return this.productsService.getGlobalInventoryLog();
+  }
+
+  // GET /products/:id/logs (Específico)
+  @Get(':id/logs')
+  findProductLogs(@Param('id',ParseIntPipe) id: number){
+    return this.productsService.getProductLogs(id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.productsService.findOne(+id);

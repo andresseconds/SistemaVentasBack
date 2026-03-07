@@ -92,4 +92,40 @@ export class ProductsService {
       data: { isActive: false },
     });
   }
+
+  // Historial Global (Los últimos 50 movimientos del inventario)
+  async getGlobalInventoryLog(){
+    return await this.prisma.inventoryLog.findMany({
+      take: 50,
+      orderBy: {createdAt: 'desc'},
+      include:{
+        product:{
+          select: { name: true,
+                    category: true,
+           } //Para saber que producto fue, sin traer todo
+        }
+      }
+    });
+  }
+
+  // Historial Especifico (Todos los movimientos de un producto)
+  async getProductLogs(productId: number){
+    // Primero se verifica que el producto exista
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId }
+    });
+    if(!product){
+      throw new NotFoundException(`El producto #${productId}, no existe.`)
+    }
+
+    return await this.prisma.inventoryLog.findMany({
+      where: { productId },
+      orderBy: { createdAt: 'desc'},
+      include: {
+        product: {
+          select: { name: true }
+        }
+      }
+    });
+  }
 }
