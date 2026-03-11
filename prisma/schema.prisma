@@ -13,6 +13,7 @@ model Product {
   name        String   @unique
   description String?
   price       Float
+  cost        Float    @default(0)
   stock       Int      @default(0)
   minStock    Int      @default(5)
   category    String

@@ -149,4 +149,40 @@ export class ProductsService {
   // Filtramos en memoria para comparar campo contra campo fácilmente
   return products.filter(p => p.stock <= p.minStock);
   }
+
+  /************************************************************************
+   * Nombre: Obtener reporte de rentabilidad                              *
+   * Descripción: Obtiene el reporte de los productos con más             *
+   *              rentabilidad.                                           *
+   * Autor:  John Andrés Arévalo Rodríguez                                *
+   * Fecha:  10-03-2026                                                   *          
+   * Rama:   feat/product-profitability                                   *
+   * ---------------------------------------------------------------------*
+   * Fecha      | Usuario    | Observación                                *
+   * ---------------------------------------------------------------------*
+   * 10-03-2025 | jaarevalo  | Creación                                   *
+   ************************************************************************/
+  async getProfitabilityReport(){
+    const products = await this.prisma.product.findMany({
+      where: { isActive: true },
+      select: {
+        name: true,
+        price: true,
+        cost: true,
+      }
+    });
+
+    return products.map(p => {
+      const profit = p.price - p.cost;
+      const marginPercentage = p.price > 0 ? (profit / p.price) * 100 : 0;
+
+      return {
+        product: p.name,
+        price: p.price,
+        cost: p.cost,
+        profitPerUnit: profit,
+        margin: `${marginPercentage.toFixed(2)}%`
+      };
+    }).sort((a,b) => b.profitPerUnit -  a.profitPerUnit); // Ordenar por los mas rentables
+  }
 }
