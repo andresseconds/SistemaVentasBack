@@ -6,11 +6,23 @@ import { UpdateStockDto } from './dto/update-stock.dto'
 
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(private readonly productsService: ProductsService) { }
 
   @Post()
   create(@Body() createProductDto: CreateProductDto) {
     return this.productsService.create(createProductDto);
+  }
+
+  // Para un solo ingrediente
+  @Post(':id/recipe')
+  addOne(@Param('id', ParseIntPipe) id: number, @Body() data: { ingredientId: number, quantity: number }) {
+    return this.productsService.addRecipeItem(id, data.ingredientId, data.quantity);
+  }
+
+  // Para la receta completa
+  @Post(':id/recipe/bulk')
+  addBulk(@Param('id', ParseIntPipe) id: number, @Body() data: { ingredients: { ingredientId: number, quantity: number }[] }) {
+    return this.productsService.addFullRecipe(id, data.ingredients);
   }
 
   @Get()
@@ -20,61 +32,31 @@ export class ProductsController {
 
   // GET /products/inventory/logs (Global)
   @Get('inventory/logs')
-  findAllLogs(){
+  findAllLogs() {
     return this.productsService.getGlobalInventoryLog();
   }
 
   // GET /products/:id/logs (Específico)
   @Get(':id/logs')
-  findProductLogs(@Param('id',ParseIntPipe) id: number){
+  findProductLogs(@Param('id', ParseIntPipe) id: number) {
     return this.productsService.getProductLogs(id);
   }
 
-   /****************************************************
-   * Nombre: Reporte de rentabilidad                  *
-   * Descripción: EndPoint para el consumo del API    *
-   * Autor:  John Andrés Arévalo Rodríguez            *
-   * Fecha:  10-03-2026                               *          
-   * Rama:   feat/product-profitability               *
-   * ------------------------------------------------ *
-   * Fecha      | Usuario    | Observación            *
-   * ------------------------------------------------ *
-   * 10-03-2025 | jaarevalo  | Creación               *
-   ****************************************************/
+  // Reporte de rentabilidad
   @Get('reports/profitability')
-  getProfitability(){
+  getProfitability() {
     return this.productsService.getProfitabilityReport();
   }
 
-   /****************************************************
-   * Nombre: Reporte de rentabilidadpor producto                 
-   * Descripción: EndPoint para el consumo del API    
-   * Autor:  John Andrés Arévalo Rodríguez            
-   * Fecha:  10-03-2026                                         
-   * Rama:   feat/single-product-profitability               
-   * ------------------------------------------------ 
-   * Fecha      | Usuario    | Observación            
-   * ------------------------------------------------ 
-   * 10-03-2025 | jaarevalo  | Creación               
-   ****************************************************/
+  // Reporte de rentabilidadpor producto                 
   @Get(':id/profitability')
-  getProductProfitability(@Param('id', ParseIntPipe) id: number){
+  getProductProfitability(@Param('id', ParseIntPipe) id: number) {
     return this.productsService.getSingleProductProfitability(id);
   }
 
-  /****************************************************
-   * Nombre: Alerta de stock bajo                     *
-   * Descripción: EndPoint para el consumo del API    *
-   * Autor:  John Andrés Arévalo Rodríguez            *
-   * Fecha:  09-03-2026                               *          
-   * Rama:   feat/inventory-low-stock-alerts          *
-   * ------------------------------------------------ *
-   * Fecha      | Usuario    | Observación            *
-   * ------------------------------------------------ *
-   * 09-03-2025 | jaarevalo  | Creación               *
-   ****************************************************/
+  // Alerta de stock bajo                     
   @Get('inventory/alerts')
-  getAlerts(){
+  getAlerts() {
     return this.productsService.getSlowStockAlerts();
   }
 
@@ -92,7 +74,7 @@ export class ProductsController {
   updateStock(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateStockDto: UpdateStockDto
-  ){
+  ) {
     return this.productsService.updateStock(id, updateStockDto);
   }
 

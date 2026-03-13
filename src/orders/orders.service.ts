@@ -28,42 +28,78 @@ export class OrdersService {
       let totalAmount = 0;
       const orderItemsData: { productId: number; quantity: number; price: number }[] = [];
 
-      // 3. Procesar cada producto para obtener su precio actual
+      // 3. Procesar cada producto
       for (const item of items) {
         const product = await tx.product.findUnique({
           where: { id: item.productId },
+          include: { recipe: true } //Traemos los ingredientes, si existen
         });
 
         if (!product || !product.isActive) {
           throw new NotFoundException(`Producto con ID ${item.productId} no encontrado`);
         }
 
-        // Validar si hay suficiente stock
-        if (product.stock < item.quantity) {
-          throw new BadRequestException(`Stock induficiente para ${product.name}. Disponibles: ${product.stock}, Solicitados: ${item.quantity}`);
-        }
+        //Lógica de recetas
+        if (product.recipe && product.recipe.length > 0) {
+          // ESCENARIO A: El producto tiene receta (ej: capuchino)
+          for (const ingredientInfo of product.recipe) {
+            const totalIngredientNeed = ingredientInfo.quantity * item.quantity;
 
-        // Restar el stock
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stock: {
-              decrement: item.quantity // Prisma hace la resta automaticamente
+            // Validar stock del ingrediente
+            const ingredient = await tx.product.findUnique({
+              where: { id: ingredientInfo.ingredientId }
+            });
+
+            if (!ingredient || ingredient.stock < totalIngredientNeed) {
+              throw new BadRequestException(
+                `Insumo insuficiente: ${ingredient?.name || 'Deconocido'}. Necesario: ${totalIngredientNeed}, Disponible: ${ingredient?.stock || 0}`
+              );
             }
+
+            // Restar stock del ingrediente
+            await tx.product.update({
+              where: { id: ingredientInfo.ingredientId },
+              data: { stock: { decrement: totalIngredientNeed } }
+            });
+
+            // Log de inventario para el ingrediente
+            await tx.inventoryLog.create({
+              data: {
+                productId: ingredientInfo.ingredientId,
+                quantity: -totalIngredientNeed,
+                type: 'SALE',
+                reason: `Venta de ${product.name} (Receta) - Mesa ${tableId}`,
+              },
+            });
           }
-        });
+        } else {
+          // ESCENARIO B: Venta directa (ej: cerveza)
+          // Validar si hay suficiente stock para producto sin receta
+          if (product.stock < item.quantity) {
+            throw new BadRequestException(`Stock induficiente para ${product.name}. Disponibles: ${product.stock}, Solicitados: ${item.quantity}`);
+          }
 
-        // Crear el LOG de inventario (kardex)
-        // Nota: Quantity va en negativo porque es una salida por venta
-        await tx.inventoryLog.create({
-          data: {
-            productId: product.id,
-            quantity: -item.quantity, //Se envia el dremento para simular la venta de un producto
-            type: 'SALE',
-            reason: `Venta - Mesa ${tableId}`, //Se puede mejorar luego con ID de la orden
-          },
-        });
+          // Restar el stock
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              stock: {
+                decrement: item.quantity // Prisma hace la resta automaticamente
+              }
+            }
+          });
 
+          // Crear el LOG de inventario (kardex)
+          // Nota: Quantity va en negativo porque es una salida por venta
+          await tx.inventoryLog.create({
+            data: {
+              productId: product.id,
+              quantity: -item.quantity, //Se envia el dremento para simular la venta de un producto
+              type: 'SALE',
+              reason: `Venta - Mesa ${tableId}`, //Se puede mejorar luego con ID de la orden
+            },
+          });
+        }
         // Se acumula el total de la factura segun la cantidad de items 
         totalAmount += product.price * item.quantity;
 
@@ -179,7 +215,7 @@ export class OrdersService {
                 reason: `Order #${id}, cancelada - Devolución de productos`,
               }
             });
-          }else{
+          } else {
             throw new BadRequestException(`La orden #${id}, ya ha sido pagada y no se puede cancelar.`)
           }
         }

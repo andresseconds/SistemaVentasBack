@@ -234,4 +234,73 @@ export class ProductsService {
       }
     };
   }
+
+  /************************************************************************
+   * Nombre: Agregar receta a producto                                    *
+   * Descripción: Agrega la receta a un producto, si es necesario.        *
+   *                                                                      *
+   * Autor:  John Andrés Arévalo Rodríguez                                *
+   * Fecha:  12-03-2026                                                   *          
+   * Rama:   feat/product-recipes                                         *
+   * ---------------------------------------------------------------------*
+   * Fecha      | Usuario    | Observación                                *
+   * ---------------------------------------------------------------------*
+   * 12-03-2025 | jaarevalo  | Creación                                   *
+   ************************************************************************/
+  // Agrega uno por uno los ingredientes de un producto
+  async addRecipeItem(productId: number, ingredientId: number, quantity: number){
+    const item = await this.prisma.recipeItem.upsert({ 
+      where: {productId_ingredientId: { productId, ingredientId}},
+      update: { quantity },
+      create: { productId, ingredientId, quantity}
+    });
+
+    // Actualiza el costo del producto padre
+    await this.updateProductConstFromRecipe(productId);
+
+    return item;
+  }
+
+  // Agrega todos los ingredientes de un producto
+  async addFullRecipe(productId: number, ingredients: { ingredientId: number, quantity: number}[]){
+    await this.prisma.$transaction(async (tx) => {
+      for(const item of ingredients){
+        await tx.recipeItem.upsert({
+          where: { productId_ingredientId: { productId, ingredientId: item.ingredientId }},
+          update: { quantity: item.quantity },
+          create: { productId, ingredientId: item.ingredientId, quantity: item.quantity }
+        });
+      }
+    });
+
+    return await this.updateProductConstFromRecipe(productId);
+  }
+
+
+  async updateProductConstFromRecipe(productId: number){
+    // 1. Buscamos el producto con todos sus ingredientes y el costo de cada uno
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        recipe:{
+          include:{
+            ingredient: true //Para obetener el cost del insumo
+          }
+        }
+      }
+    });
+
+    if(!product || product.recipe.length === 0 ) return; 
+
+    //2. Calculamos la suma de (cantidad_usada * costo_del_ingrediente)
+    const totalCost = product.recipe.reduce((acc, item) => {
+      return acc + (item.quantity * item.ingredient.cost);
+    }, 0);
+
+    // 3. Actualizamos el costo  del producto principal
+    return await this.prisma.product.update({
+      where: { id: productId },
+      data: { cost: totalCost}
+    });
+  }
 }
