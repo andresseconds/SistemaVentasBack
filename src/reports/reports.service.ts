@@ -36,7 +36,7 @@ export class ReportsService {
         };
     }
 
-    async getDailySummary(){
+    async getDailySummary() {
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
 
@@ -75,7 +75,33 @@ export class ReportsService {
             totalOrders: items.length,
             revenue: totalRevenue,
             cost: totalCost,
-            netProfit: totalRevenue > 0 ? ((totalRevenue - totalCost)/totalRevenue) * 100 : 0,
+            netProfit: totalRevenue > 0 ? ((totalRevenue - totalCost) / totalRevenue) * 100 : 0,
         };
+    }
+
+    // reports.service.ts
+
+    async getLowStockReport() {
+        const alerts = await this.prisma.product.findMany({
+            where: {
+                OR: [
+                    { stock: { lte: 5 } }, // Un valor genérico de alerta, por ahora
+                    { stock: { lte: 0 } }  // Agotados
+                ],
+                isActive: true,
+            },
+            select: {
+                name: true,
+                stock: true,
+                category: { select: { name: true } }
+            }
+        });
+
+        return alerts.map(item => ({
+            producto: item.name,
+            stock: item.stock,
+            categoria: item.category.name,
+            mensaje: item.stock <= 0 ? "¡AGOTADO!" : "Nivel Crítico"
+        }));
     }
 }
