@@ -8,7 +8,7 @@ export enum TableStatus {
 }
 export class CreateTableDto {
     @IsString()
-    number: string;
+    number?: string;
 
     @IsNumber()
     @Min(1)

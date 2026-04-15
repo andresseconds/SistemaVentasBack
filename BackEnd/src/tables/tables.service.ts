@@ -9,7 +9,11 @@ export class TablesService {
 
   async create(createTableDto: CreateTableDto) {
     return await this.prisma.table.create({
-      data: createTableDto
+      data: {
+        ...createTableDto,
+        number: createTableDto.number!,
+        status: createTableDto.status as any,
+      }
     });
   }
 
