@@ -6,5 +6,11 @@ export const OrdersService = {
             method: 'POST',
             body: JSON.stringify(orderData),
         });
+    },
+
+    checkoutTable: async (tableId: number) => {
+        return fetchApi(`/orders/checkout/${tableId}`,{
+            method: 'PATCH',
+        });
     }
 };

@@ -30,6 +30,11 @@ export class OrdersController {
     return this.ordersService.findAll();
   }
 
+  @Patch('checkout/:tableId')
+  async checkoutTable(@Param('tableId') tableId: string){
+    return await this.ordersService.checkoutTable(Number(tableId));
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.ordersService.findOne(+id);

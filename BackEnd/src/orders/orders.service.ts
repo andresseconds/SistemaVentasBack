@@ -339,4 +339,29 @@ export class OrdersService {
     };
   }
 
+  // Cierra la cuenta y libera la mesa
+  async checkoutTable(tableId: number){
+    //1. Verificamos que la mesa exista
+    const table = await this.prisma.table.findUnique({
+      where: { id: tableId }
+    });
+
+    if(!table){
+      throw new Error('La mesa no existe');
+    }
+
+    //2. Cambiamos el estado de la mesa a AVAILABLE (Libre)
+    // Nota: Si en tu modelo de Order tienes un campo de status (ej. 'PAID'), 
+    // también deberías actualizar la orden aquí. Por ahora liberamos la mesa.
+    const updatedTable = await this.prisma.table.update({
+      where: { id: tableId },
+      data: { status: 'AVAILABLE' }
+    });
+
+    return {
+      message: `Mesa ${updatedTable.number} liberada con éxito`,
+      table: updatedTable
+    };
+  }
+
 }
