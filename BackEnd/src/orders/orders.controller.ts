@@ -5,16 +5,15 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(private readonly ordersService: OrdersService) { }
 
   @Post()
   create(@Body() createOrderDto: CreateOrderDto) {
-    console.log("2. LLEGÓ AL CONTROLADOR:", createOrderDto);
     return this.ordersService.create(createOrderDto);
   }
 
   @Get('pending/kitchen')
-  findAllPending(){
+  findAllPending() {
     return this.ordersService.findAllPending();
   }
 
@@ -22,10 +21,10 @@ export class OrdersController {
   getSalesReport(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
-  ){
+  ) {
     return this.ordersService.getSalesDetail(startDate, endDate);
   }
-  
+
   @Get()
   findAll() {
     return this.ordersService.findAll();
@@ -37,8 +36,11 @@ export class OrdersController {
   }
 
   @Patch('checkout/:tableId')
-  async checkoutTable(@Param('tableId') tableId: string, @Body('paymentMethod') paymentMethod: string){
-    return await this.ordersService.checkoutTable(Number(tableId), paymentMethod);
+  async checkoutTable(
+    @Param('tableId') tableId: string,
+    @Body() body: { payments: { method: string, amount: number }[] } // <-- Ahora es un arreglo
+  ) {
+    return await this.ordersService.checkoutTable(Number(tableId), body.payments);
   }
 
   @Patch(':id/add-items')

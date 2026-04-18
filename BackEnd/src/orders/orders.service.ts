@@ -382,7 +382,7 @@ export class OrdersService {
 
   // El checkout marca la orden como PAID
   // Cierra la cuenta y libera la mesa
-  async checkoutTable(tableId: number, paymentMethod: any) {
+  async checkoutTable(tableId: number, payments: {method: any, amount: number}[]) {
     //1. Verificamos que la mesa exista
     const table = await this.prisma.table.findUnique({
       where: { id: tableId }
@@ -392,12 +392,6 @@ export class OrdersService {
       throw new Error('La mesa no existe');
     }
 
-    // Cambiamos el estado de la mesa a AVAILABLE (Libre)
-    const updatedTable = await this.prisma.table.update({
-      where: { id: tableId },
-      data: { status: 'AVAILABLE' }
-    });
-
     // Buscamos la orden activa y la actualizamos con el pago
     const activeOrder = await this.prisma.order.findFirst({
       where: {
@@ -406,15 +400,35 @@ export class OrdersService {
       }
     });
 
-    if (activeOrder) {
-      await this.prisma.order.update({
-        where: { id: activeOrder.id },
-        data: {
-          paymentMethod: paymentMethod, // CASH, CARD o TRANSFER
-          status: 'PAID'
-        }
-      });
+    if (!activeOrder) {
+      throw new Error('No hay orden activa en esta mesa');
     }
+
+    // Verificamos que la suma de los pagos cubra la cuenta
+    const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+    if(totalPaid < activeOrder.total){
+      throw new Error(`Fondos insuficientes. La cuenta es de $${activeOrder.total} pero solo se están pagando $${totalPaid}`);
+    }
+
+    // Actualizamos la orden a PAID y creamos el registro de pago
+    await this.prisma.order.update({
+      where: { id: activeOrder.id },
+      data: {
+        status: 'PAID',
+        payments: {
+          create: payments.map(p => ({
+            method: p.method,
+            amount: p.amount
+          }))
+        }
+      }
+    });
+
+    // Cambiamos el estado de la mesa a AVAILABLE (Libre)
+    const updatedTable = await this.prisma.table.update({
+      where: { id: tableId },
+      data: { status: 'AVAILABLE' }
+    });
 
     return {
       message: `Mesa ${updatedTable.number} liberada con éxito`,

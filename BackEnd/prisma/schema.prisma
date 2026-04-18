@@ -72,6 +72,8 @@ model Order {
   isActive  Boolean     @default(true)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
+
+  payments       OrderPayment[]
 }
 
 // 5. ITEMS DE LA ORDEN
@@ -129,4 +131,14 @@ model RecipeItem{
   quantity       Float
 
   @@unique([productId, ingredientId]) //Un ingrediente no puede estardos veces en la misma receta 
+}
+
+ // 10. PAGOS DIVIDIDOS
+model OrderPayment {
+  id        Int           @id @default(autoincrement())
+  orderId   Int
+  order     Order         @relation(fields: [orderId], references: [id])
+  amount    Float         // Cuánta plata entró en este pago específico
+  method    PaymentMethod // CASH, CARD o TRANSFER
+  createdAt DateTime      @default(now())
 }
