@@ -6,11 +6,11 @@ export const useSocket = () => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    // 1. Detectamos automáticamente la IP de donde viene la página
-    const serverIp = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+    // 1. Unificamos la fuente de la verdad: Usamos la IP de tu .env.local
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
     
-    // Se conecta dinámicamente usando esa IP
-    const socketInstance = io(`http://${serverIp}:3000`, {
+    // 2. Nos conectamos dinámicamente a la URL del BackEnd
+    const socketInstance = io(API_URL, {
       transports: ['websocket'],
       reconnectionAttempts: 5
     });
@@ -20,12 +20,12 @@ export const useSocket = () => {
     });
 
     socketInstance.on('connect', () => {
-      console.log("¡Socket Conectado con éxito!");
+      console.log("🟢 ¡Socket Conectado con éxito a:", API_URL);
       setIsConnected(true);
     });
 
     socketInstance.on('connect_error', (err) => {
-      console.error("Error de socket (revisa Firewall puerto 3000):", err.message);
+      console.error("🔴 Error de socket (revisa Firewall o URL):", err.message);
     });
 
     socketInstance.on('disconnect', () => {

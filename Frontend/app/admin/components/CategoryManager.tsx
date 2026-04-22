@@ -13,16 +13,19 @@ export default function CategoryManager() {
   const [newCategory, setNewCategory] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Cargar categorías al montar el componente
+  // 👇 1. Agregamos la variable de entorno
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
   useEffect(() => {
     fetchCategories();
   }, []);
 
+  // 👇 2. Corregimos el fetch para que apunte al BackEnd real
   const fetchCategories = async () => {
     try {
-      // Asumo que tu fetchApi ya maneja la URL base
-      const data = await fetch('/api/categories').then(res => res.json()); 
-      // O usa tu wrapper: const data = await fetchApi('/categories');
+      const res = await fetch(`${API_URL}/categories`);
+      if (!res.ok) throw new Error('Error en la red');
+      const data = await res.json();
       setCategories(data);
     } catch (error) {
       console.error("Error cargando categorías:", error);
@@ -34,15 +37,15 @@ export default function CategoryManager() {
     setIsLoading(true);
 
     try {
-      // Ajusta la ruta a tu API de NestJS
-      await fetch('http://192.168.1.8:3000/categories', {
+      // 👇 3. Corregimos el POST también
+      await fetch(`${API_URL}/categories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newCategory.toUpperCase() })
       });
 
       setNewCategory('');
-      fetchCategories(); // Recargamos la lista
+      fetchCategories(); 
       alert('Categoría creada');
     } catch (error) {
       alert('Error al guardar. Verifica si ya existe.');
@@ -50,7 +53,7 @@ export default function CategoryManager() {
       setIsLoading(false);
     }
   };
-
+  
   return (
     <div className="max-w-4xl animate-in fade-in duration-500">
       <div className="mb-8">

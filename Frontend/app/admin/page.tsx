@@ -4,10 +4,11 @@ import React, { useState } from 'react';
 import { Package, Utensils, Table as TableIcon, Layers, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
+
 // Importamos nuestros componentes especializados
 import CategoryManager from './components/CategoryManager';
 import TableManager from './components/TableManager'; 
-// import ProductManager from './components/ProductManager';
+import ProductManager from './components/ProductManager';
 
 export default function AdminPage() {
     const [activeTab, setActiveTab] = useState<'PRODUCTS' | 'RECIPES' | 'TABLES' | 'CATEGORIES'>('PRODUCTS');
@@ -66,14 +67,7 @@ export default function AdminPage() {
             {/* --- CONTENIDO PRINCIPAL --- */}
             {/* Añadimos ml-64 porque el sidebar ahora es 'fixed' */}
             <main className="flex-1 ml-64 p-8 overflow-y-auto">
-                {activeTab === 'PRODUCTS' && (
-                    <section>
-                        <h2 className="text-2xl font-bold text-gray-800 mb-4">Inventario</h2>
-                        <div className="bg-white p-10 rounded-xl border border-dashed border-gray-300 text-center text-gray-400">
-                            Próximamente: Gestión de Productos e Insumos
-                        </div>
-                    </section>
-                )}
+                {activeTab === 'PRODUCTS' && <ProductManager />}
 
                 {activeTab === 'RECIPES' && (
                     <section>
